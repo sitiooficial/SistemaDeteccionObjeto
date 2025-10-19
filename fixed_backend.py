@@ -141,7 +141,7 @@ def process_image(image):
 
 @app.route('/')
 def index():
-    return render_template('fixed_index.html')
+    return render_template('index.html')
 
 @app.route('/detect/image', methods=['POST'])
 def detect_image():
