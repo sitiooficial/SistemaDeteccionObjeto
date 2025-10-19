@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Figuras Geométricas - YOLO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(180deg); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 50px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 18px 35px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 4px solid transparent;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 700;
+            background: #f8f9ff;
+        }
+
+        .tab-icon {
+            font-size: 1.3em;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .upload-area {
+            border: 4px dashed #667eea;
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            cursor: pointer;
+            transition: all 0.4s;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-area:hover::before {
+            left: 100%;
+        }
+
+        .upload-area:hover {
+            background: linear-gradient(135deg, #f0f2ff 0%, #e8ebff 100%);
+            border-color: #764ba2;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .upload-area.dragover {
+            background: linear-gradient(135deg, #e8ebff 0%, #dde0ff 100%);
+            border-color: #764ba2;
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-icon {
+            font-size: 5em;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .upload-area h3 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+            font-size: 1em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .input-group input[type="text"] {
+            width: 100%;
+            padding: 18px;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .input-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .results {
+            margin-top: 50px;
+        }
+
+        .results h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+            border-radius: 20px;
+            padding: 30px;
+            border: 3px solid #e0e0e0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+
+        .result-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+
+        .result-box h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transition: transform 0.3s;
+        }
+
+        .result-image:hover {
+            transform: scale(1.02);
+        }
+
+        .detection-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+
+        .detection-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+
+        .detection-item strong {
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .detection-header {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .detection-detail {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detection-detail:last-child {
+            border-bottom: none;
+        }
+
+        .detection-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .detection-value {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .message {
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(-20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+
+        .message-icon {
+            font-size: 1.5em;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            border-left: 5px solid #c33;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            border-left: 5px solid #3c3;
+        }
+
+        .info {
+            background: #e7f3ff;
+            color: #0066cc;
+            border-left: 5px solid #0066cc;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .no-detections {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .no-detections-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+
+            .tabs {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .tab {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .upload-icon {
+                font-size: 3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>🔍 Detector de Figuras Geométricas</h1>
+                <p>Sistema de detección inteligente con YOLO - Identifica formas y colores en tiempo real</p>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('upload')">
+                    <span class="tab-icon">📁</span>
+                    <span>Subir Archivo</span>
+                </button>
+                <button class="tab" onclick="switchTab('url')">
+                    <span class="tab-icon">🔗</span>
+                    <span>Desde URL</span>
+                </button>
+                <button class="tab" onclick="switchTab('video')">
+                    <span class="tab-icon">🎥</span>
+                    <span>Procesar Video</span>
+                </button>
+            </div>
+
+            <!-- Tab: Subir Archivo -->
+            <div id="upload-tab" class="tab-content active">
+                <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📤</div>
+                    <h3>Arrastra una imagen aquí o haz clic para seleccionar</h3>
+                    <p>Formatos soportados: JPG, PNG, JPEG</p>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+                <button class="btn" onclick="processFile()" id="processBtn" disabled>
+                    <span>🚀 Procesar Imagen</span>
+                </button>
+            </div>
+
+            <!-- Tab: URL -->
+            <div id="url-tab" class="tab-content">
+                <div class="input-group">
+                    <label for="urlInput">🌐 URL de la Imagen</label>
+                    <input type="text" id="urlInput" placeholder="https://ejemplo.com/imagen.jpg">
+                </div>
+                <button class="btn" onclick="processURL()">
+                    <span>🔍 Procesar desde URL</span>
+                </button>
+            </div>
+
+            <!-- Tab: Video -->
+            <div id="video-tab" class="tab-content">
+                <div class="upload-area" onclick="document.getElementById('videoInput').click()">
+                    <div class="upload-icon">🎬</div>
+                    <h3>Selecciona un video para procesar</h3>
+                    <p>Formatos soportados: MP4, AVI, MOV</p>
+                </div>
+                <input type="file" id="videoInput" accept="video/*" onchange="handleVideoSelect(event)">
+                <button class="btn" onclick="processVideo()" id="processVideoBtn" disabled>
+                    <span>🎬 Procesar Video</span>
+                </button>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>⏳ Procesando... Por favor espera</p>
+            </div>
+
+            <!-- Results -->
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        let selectedFile = null;
+        let selectedVideo = null;
+
+        // Switch tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Drag & Drop
+        const dropZone = document.getElementById('dropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
+        });
+
+        dropZone.addEventListener('drop', handleDrop);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                document.getElementById('processBtn').disabled = false;
+                showMessage('✅ Archivo cargado: ' + files[0].name, 'success');
+            }
+        }
+
+        function handleFileSelect(event) {
+            selectedFile = event.target.files[0];
+            if (selectedFile) {
+                document.getElementById('processBtn').disabled = false;
+                showMessage('✅ Archivo cargado: ' + selectedFile.name, 'success');
+            }
+        }
+
+        function handleVideoSelect(event) {
+            selectedVideo = event.target.files[0];
+            if (selectedVideo) {
+                document.getElementById('processVideoBtn').disabled = false;
+                showMessage('✅ Video cargado: ' + selectedVideo.name, 'success');
+            }
+        }
+
+        async function processFile() {
+            if (!selectedFile) return;
+
+            showLoading(true);
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch(`${API_URL}/detect/image`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                showLoading(false);
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showMessage('❌ Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showLoading(false);
+                showMessage('❌ Error de conexión: ' + error.message, 'error');
+            }
+        }
+
+        async function processURL() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                showMessage('⚠️ Por favor ingresa una URL válida', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`${API_URL}/detect/image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                showLoading(false);
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showMessage('❌ Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showLoading(false);
+                showMessage('❌ Error de conexión: ' + error.message, 'error');
+            }
+        }
+
+        async function processVideo() {
+            if (!selectedVideo) return;
+
+            showLoading(true);
+            const formData = new FormData();
+            formData.append('file', selectedVideo);
+
+            try {
+                const response = await fetch(`${API_URL}/detect/video`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                showLoading(false);
+
+                if (data.success) {
+                    displayVideoResults(data);
+                } else {
+                    showMessage('❌ Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showLoading(false);
+                showMessage('❌ Error de conexión: ' + error.message, 'error');
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            const statsHTML = `
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-number">${data.detections.length}</div>
+                        <div class="stat-label">Objetos Detectados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${new Set(data.detections.map(d => d.shape)).size}</div>
+                        <div class="stat-label">Formas Únicas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${new Set(data.detections.map(d => d.color)).size}</div>
+                        <div class="stat-label">Colores Únicos</div>
+                    </div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = `
+                <h2>📊 Resultados de la Detección</h2>
+                ${statsHTML}
+                <div class="results-grid">
+                    <div class="result-box">
+                        <h3>🖼️ Imagen Procesada</h3>
+                        <img src="${data.processed_image}" class="result-image" alt="Imagen procesada">
+                    </div>
+                    <div class="result-box">
+                        <h3>📋 Detecciones (${data.detections.length})</h3>
+                        <div id="detectionsList"></div>
+                    </div>
+                </div>
+            `;
+
+            const detectionsList = document.getElementById('detectionsList');
+            if (data.detections.length === 0) {
+                detectionsList.innerHTML = `
+                    <div class="no-detections">
+                        <div class="no-detections-icon">🔍</div>
+                        <p>No se detectaron objetos en la imagen</p>
+                    </div>
+                `;
+            } else {
+                data.detections.forEach((det, index) => {
+                    detectionsList.innerHTML += `
+                        <div class="detection-item">
+                            <div class="detection-header">🔹 Objeto ${index + 1}</div>
+                            <div class="detection-detail">
+                                <span class="detection-label">Forma:</span>
+                                <span class="detection-value">${det.shape}</span>
+                            </div>
+                            <div class="detection-detail">
+                                <span class="detection-label">Color:</span>
+                                <span class="detection-value">${det.color}</span>
+                            </div>
+                            <div class="detection-detail">
+                                <span class="detection-label">Confianza:</span>
+                                <span class="detection-value">${(det.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function displayVideoResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            const totalDetections = data.detections.reduce((sum, frame) => sum + frame.detections.length, 0);
+            const framesWithDetections = data.detections.filter(f => f.detections.length > 0).length;
+            
+            resultsDiv.innerHTML = `
+                <h2>🎬 Video Procesado Exitosamente</h2>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-number">${data.total_frames}</div>
+                        <div class="stat-label">Frames Totales</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${framesWithDetections}</div>
+                        <div class="stat-label">Frames con Detecciones</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${totalDetections}</div>
+                        <div class="stat-label">Detecciones Totales</div>
+                    </div>
+                </div>
+                <div class="result-box" style="text-align: center;">
+                    <h3>⬇️ Descargar Video Procesado</h3>
+                    <a href="${API_URL}${data.video_path}" class="download-link" download>
+                        📥 Descargar Video con Detecciones
+                    </a>
+                </div>
+                <div class="result-box" style="margin-top: 30px;">
+                    <h3>📊 Resumen de Detecciones por Frame</h3>
+                    <div id="videoDetections"></div>
+                </div>
+            `;
+
+            const videoDetections = document.getElementById('videoDetections');
+            if (data.detections.length === 0) {
+                videoDetections.innerHTML = `
+                    <div class="no-detections">
+                        <div class="no-detections-icon">🔍</div>
+                        <p>No se registraron detecciones en el video</p>
+                    </div>
+                `;
+            } else {
+                data.detections.forEach(frameData => {
+                    if (frameData.detections.length > 0) {
+                        const shapes = frameData.detections.map(d => d.shape).join(', ');
+                        videoDetections.innerHTML += `
+                            <div class="detection-item">
+                                <div class="detection-header">Frame ${frameData.frame}</div>
+                                <div class="detection-detail">
+                                    <span class="detection-label">Objetos:</span>
+                                    <span class="detection-value">${frameData.detections.length}</span>
+                                </div>
+                                <div class="detection-detail">
+                                    <span class="detection-label">Formas:</span>
+                                    <span class="detection-value">${shapes}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+            if (show) {
+                document.getElementById('results').innerHTML = '';
+            }
+        }
+
+        function showMessage(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            resultsDiv.innerHTML = `
+                <div class="message ${type}">
+                    <span class="message-icon">${icon}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
