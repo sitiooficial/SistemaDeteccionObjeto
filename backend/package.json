@@ -1,11 +1,30 @@
 {
-  "name": "backend",
+  "name": "s_v_e",
   "version": "1.0.0",
-  "main": "server.js",
+  "description": "",
+  "main": "backend.js",
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2"
-  }
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "csv-stringify": "^6.6.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.15.0",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.2",
+    "googleapis": "^166.0.0",
+    "socket.io": "^4.8.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {}
 }
